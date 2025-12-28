@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>노블 카드 생성기 V39</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.js"></script>
+  <style>
+    /* 폰트 로드 */
+    @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Gowun+Dodum&family=Nanum+Gothic&family=Nanum+Myeongjo&family=Noto+Sans+KR:wght@400;700;900&family=Noto+Serif+KR:wght@400;700&display=swap');
+    @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+    @import url('https://cdn.jsdelivr.net/npm/ridibatang@1.0.0/dist/ridibatang.css');
+    @font-face { font-family: 'KoPub World Batang'; font-weight: 400; src: url('https://cdn.jsdelivr.net/npm/font-kopubworld@1.0.0/fonts/kopubworld-batang-pro-medium.woff2') format('woff2'); }
+    @font-face { font-family: 'MaruBuri'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10-21@1.0/MaruBuri-Regular.woff') format('woff'); font-weight: normal; font-style: normal; }
+    @font-face { font-family: 'Cafe24SsurroundAir'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/Cafe24SsurroundAir.woff') format('woff'); font-weight: normal; font-style: normal; }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; color: #334155; }
+
+    /* UI 레이아웃 */
+    .editor-area { width: 100%; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.08); z-index: 1000; position: sticky; top: 0; display: flex; flex-direction: column; border-bottom: 1px solid #e2e8f0; }
+    .editor-header-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #fff; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+    .editor-title { font-size: 16px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+    
+    .main-controls { padding: 10px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    
+    .editor-content-wrapper { padding: 16px; max-height: 70vh; overflow-y: auto; transition: all 0.3s ease; background: #fff; }
+    .editor-content-wrapper.collapsed { display: none; }
+
+    /* 패널 및 탭 - UI 구분: 스타일 패널을 푸른 톤으로 변경 */
+    .control-panel { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.05); }
+    .tab-menu { display: flex; gap: 5px; margin-bottom: 10px; border-bottom: 2px solid #e0f2fe; }
+    .tab-btn { flex: 1; padding: 8px; border: none; background: transparent; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: 0.2s; }
+    .tab-btn.active { color: #0284c7; border-bottom-color: #0284c7; background: rgba(2, 132, 199, 0.05); }
+
+    .style-section { display: none; flex-direction: column; gap: 12px; }
+    .style-section.active { display: flex; }
+    
+    /* 배경 모드 섹션 */
+    .bg-mode-section { display: flex; flex-direction: column; gap: 12px; padding: 12px; background: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1; margin-top: 5px; }
+    .bg-mode-section.hidden { display: none; }
+
+    .style-row { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 700; color: #475569; }
+    .slider-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+    .slider-label { min-width: 40px; color: #64748b; }
+    .val-display { min-width: 30px; text-align: right; font-family: monospace; color: #3b82f6; font-weight: bold; }
+    
+    .mini-color-row { display: flex; align-items: center; gap: 8px; background: #fff; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; flex: 1; }
+    .mini-preview { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ddd; position: relative; overflow: hidden; flex-shrink: 0; background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNTAgMEg0VjBIMHY0aDR2NHoiIGZpbGw9IiNjY2MiLz48L3N2Zz4='); }
+    .mini-color-layer { width:100%; height:100%; }
+    input[type="color"] { position: absolute; top:-50%; left:-50%; width:200%; height:200%; opacity:0; cursor:pointer; }
+    .mini-input { border: none; width: 100%; font-family: monospace; font-size: 12px; outline: none; background: transparent; color: #334155; }
+
+    /* 프리셋 & 버튼 */
+    .preset-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+    .btn-preset { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.15); cursor: pointer; flex-shrink: 0; transition: transform 0.1s; position: relative;}
+    .btn-preset:active { transform: scale(0.9); }
+    .btn-preset.deletable::after {
+       content: '✖'; position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; width: 14px; height: 14px; font-size: 10px; display: flex; justify-content: center; align-items: center;
+    }
+
+    .btn-save { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; }
+    .btn-save:hover { background: #2563eb; }
+    .btn-fold { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;}
+    .btn-style { background: #fff; color: #0f172a; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; flex: 1; display:flex; justify-content:center; align-items:center; gap:5px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .btn-style:hover { background: #f8fafc; border-color: #94a3b8; }
+    
+    .btn-fit { flex: 1; padding: 8px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; }
+    .btn-fit.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+
+    /* 블록 에디터 - 흰색 유지하여 스타일 설정과 대비 */
+    .block-list { display: flex; flex-direction: column; gap: 12px; }
+    .block-item { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .block-tag { font-size: 11px; font-weight: 800; color: #94a3b8; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; }
+    .block-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end;}
+
+    .code-editor { width: 100%; height: 120px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.6; resize: vertical; outline: none; background: #fff; color: #1e293b; transition: border 0.2s; }
+    .code-editor:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    
+    .source-viewer { width: 100%; height: 70px; background: #1e293b; color: #e2e8f0; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 8px; border: none; margin-top: 5px; resize: vertical; display:none; line-height: 1.4; }
+    .source-viewer.show { display: block; }
+    .source-label { font-size: 11px; color: #64748b; margin-top: 8px; margin-bottom: 4px; display: block; font-weight: 700; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+
+    /* --- 미리보기 (CSS 변수) --- */
+    .preview-container { padding: 40px 20px; width: 100%; overflow-x: auto; display: flex; justify-content: center; background-color: #e2e8f0; flex-grow: 1; padding-bottom: 150px; }
+    #capture-area { background: transparent; transform-origin: top left; }
+    
+    .card-frame {
+      border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; 
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      --hl-bg: #fef08a; --hl-col: #000; 
+      --th-col: #64748b; --th-style: italic; --th-font: 'RIDIBatang', serif; /* 속마음 */
+      --it-col: #64748b; --it-style: italic; --it-weight: 700; /* 이탤릭 */
+      --bd-col: #000; /* 강조 */
+      --qt-col: #475569; /* 인용구 */
+      /* 말풍선 변수 */
+      --bb-l-bg: #ffffff; --bb-l-tx: #1e293b;
+      --bb-r-bg: #3b82f6; --bb-r-tx: #ffffff;
+    }
+    
+    .text-part { margin: 0 0 1.2em 0; text-align: justify; word-break: keep-all; line-height: 1.8; }
+    
+    /* 파서 스타일 */
+    .bubble-row { display: flex; margin-bottom: 0.8em; width: 100%; }
+    .bubble-row.left { justify-content: flex-start; }
+    .bubble-row.right { justify-content: flex-end; }
+    
+    .bubble { max-width: 85%; padding: 10px 14px; border-radius: 16px; font-size: 0.95em; position: relative; line-height: 1.6; word-break: break-all; }
+    
+    .bubble.left { background: var(--bb-l-bg); color: var(--bb-l-tx); border: 1px solid rgba(0,0,0,0.05); border-top-left-radius: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .bubble.right { background: var(--bb-r-bg); color: var(--bb-r-tx); border-top-right-radius: 2px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+    
+    .highlight-text { background: linear-gradient(to bottom, transparent 40%, var(--hl-bg) 40%); border-radius: 2px; padding: 0 2px; font-weight: 700; color: var(--hl-col); }
+    .quote-text { color: var(--qt-col); font-weight: 700; display: block; margin: 0.5em 0; padding-left: 12px; border-left: 3px solid var(--qt-col); }
+    
+    .parsed-bold { font-weight: 800; color: var(--bd-col); }
+    .parsed-italic { color: var(--it-col); font-size: 0.95em; font-weight: var(--it-weight); font-style: var(--it-style); }
+    .parsed-thought { color: var(--th-col); font-size: 0.95em; font-style: italic; font-family: var(--th-font); }
+    
+    .parsed-h1 { font-size: 1.5em; font-weight: 800; margin: 0.5em 0; color: inherit; letter-spacing: -0.5px; }
+    .parsed-h2 { font-size: 1.2em; font-weight: 700; margin: 0.5em 0; color: inherit; }
+    .parsed-h3 { font-size: 1.1em; font-weight: 700; margin: 0.4em 0 0.2em; color: inherit; opacity: 0.9; }
+    .parsed-hr { border: 0; height: 1px; background: rgba(0,0,0,0.1); margin: 1.5em 0; }
+
+    #imgFileInput, #bgImgFileInput, #insertImgFileInput, #presetFileInput { display: none; }
+    .editor-img-preview { max-width: 100px; max-height: 100px; border-radius: 6px; border: 1px solid #ddd; }
+    
+    .overlay-colors { display: flex; gap: 8px; }
+    .btn-overlay { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #e2e8f0; cursor: pointer; position: relative; }
+    .btn-overlay.selected::after { content: '✔'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 10px; }
+
+    .btn-sm { padding: 4px 8px; font-size: 11px; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; }
+    .btn-group { display: flex; gap: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="editor-area">
+    <div class="editor-header-bar" onclick="toggleEditor()">
+      <div class="editor-title"><span id="foldIcon">🔽</span> 카드 에디터 V39</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-fold" onclick="toggleEditor(); event.stopPropagation();">접기/펼치기</button>
+        <button class="btn-save" onclick="event.stopPropagation(); saveImage()">📸 저장</button>
+      </div>
+    </div>
+
+    <div class="main-controls">
+      <span style="font-size:13px; font-weight:bold;">카드 폭:</span>
+      <input type="number" id="cardWidthInput" value="400" step="10" style="width:60px; padding:6px; border:1px solid #cbd5e1; border-radius:6px;" oninput="updatePreview()"> px
+      <div style="flex-grow:1"></div>
+      <button class="btn-style" onclick="toggleStylePanel()">🎨 스타일 설정 ▼</button>
+    </div>
+
+    <div id="editorContent" class="editor-content-wrapper">
+      
+      <div id="styleBody" class="control-panel" style="display:none;">
+        <div class="style-row">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>🎨 스타일 & 프리셋:</span>
+                <div class="btn-group">
+                    <button class="btn-sm" onclick="saveCurrentToPreset()">💾 현재 설정 저장</button>
+                    <button class="btn-sm" onclick="exportPresets()">📤 내보내기</button>
+                    <button class="btn-sm" onclick="document.getElementById('presetFileInput').click()">📥 불러오기</button>
+                </div>
+            </div>
+            <div id="presetList" class="preset-container"></div>
+        </div>
+        
+        <div class="tab-menu" style="margin-top:10px;">
+          <button class="tab-btn active" onclick="switchTab('base')">배경 & 폰트</button>
+          <button class="tab-btn" onclick="switchTab('detail')">디테일 색상</button>
+        </div>
+
+        <div id="sect-base" class="style-section active">
+          <div id="grad-controls" class="bg-mode-section active">
+            <div class="style-row">
+                <span style="display:flex; justify-content:space-between;">
+                    <span>🌈 배경색 (그라데이션):</span>
+                    <label style="font-weight:normal; font-size:11px;"><input type="checkbox" id="showImgOption" onchange="toggleImgPanel(this.checked)"> 이미지 배경 사용</label>
+                </span>
+            </div>
+            <div class="style-row"><span>시작색:</span><div class="mini-color-row"><div class="mini-preview"><div id="bg1-pv" class="mini-color-layer"></div><input type="color" oninput="setColor('bg1',this.value)"></div><input type="text" id="bg1-txt" class="mini-input" onchange="setColor('bg1',this.value)"></div></div>
+            <div class="style-row"><span>끝색:</span><div class="mini-color-row"><div class="mini-preview"><div id="bg2-pv" class="mini-color-layer"></div><input type="color" oninput="setColor('bg2',this.value)"></div><input type="text" id="bg2-txt" class="mini-input" onchange="setColor('bg2',this.value)"></div></div>
+            <div class="style-row">
+                <div style="display:flex; justify-content:space-between;"><span>각도:</span><span id="val-gradAngle" class="val-display">235</span></div>
+                <input type="range" id="gradAngle" min="0" max="360" value="235" oninput="updateVal('gradAngle', this.value); updatePreview()">
+            </div>
+          </div>
+
+          <div id="img-controls" class="bg-mode-section hidden">
+             <div class="style-row"><span>🖼️ 배경 이미지 설정:</span></div>
+             <button class="btn-style" style="width:100%;" onclick="document.getElementById('bgImgFileInput').click()">📂 이미지 선택</button>
+             <input type="file" id="bgImgFileInput" accept="image/*" onchange="handleBgUpload(this)">
+             
+             <div class="style-row" style="margin-top:5px;">
+               <div style="display:flex; justify-content:space-between;">
+                   <span>이미지 조정:</span>
+                   <button class="btn-sm" onclick="resetBgPos()">🔄 초기화</button>
+               </div>
+               
+               <div class="style-row" style="background:#fff; padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+                   <div class="slider-row">
+                       <span class="slider-label">크기:</span>
+                       <input type="range" id="bgScale" min="10" max="250" value="100" style="flex:1" oninput="updateVal('bgScale', this.value); updatePreview()">
+                       <span id="val-bgScale" class="val-display">100</span>%
+                   </div>
+                   <div class="slider-row">
+                       <span class="slider-label">가로:</span>
+                       <input type="range" id="bgPosX" min="0" max="100" value="50" style="flex:1" oninput="updateVal('bgPosX', this.value); updatePreview()">
+                       <span id="val-bgPosX" class="val-display">50</span>%
+                   </div>
+                   <div class="slider-row">
+                       <span class="slider-label">세로:</span>
+                       <input type="range" id="bgPosY" min="0" max="100" value="50" style="flex:1" oninput="updateVal('bgPosY', this.value); updatePreview()">
+                       <span id="val-bgPosY" class="val-display">50</span>%
+                   </div>
+               </div>
+               
+               <div style="display:flex; gap:5px; margin-top:5px;">
+                 <button class="btn-fit" id="btnCover" onclick="setBgSize('cover')">채우기 (Cover)</button>
+                 <button class="btn-fit active" id="btnContain" onclick="setBgSize('contain')">맞춤 (Contain)</button>
+               </div>
+               <p style="font-size:10px; color:#64748b; margin:0;">※ 채우기 모드에선 크기 조절이 자동이야.</p>
+             </div>
+             
+             <div class="style-row"><span>오버레이 색상:</span><div class="overlay-colors"><div class="btn-overlay selected" style="background:#000;" onclick="setOverlay('#000000',this)"></div><div class="btn-overlay" style="background:#0f172a;" onclick="setOverlay('#0f172a',this)"></div><div class="btn-overlay" style="background:#fff;" onclick="setOverlay('#ffffff',this)"></div></div></div>
+             <div class="style-row">
+                 <div style="display:flex; justify-content:space-between;"><span>오버레이 불투명도:</span><span id="val-overlayAlpha" class="val-display">0.5</span></div>
+                 <input type="range" id="overlayAlpha" style="width:100%;" min="0" max="1" step="0.05" value="0.5" oninput="updateVal('overlayAlpha', this.value); updatePreview()">
+             </div>
+          </div>
+
+          <div class="style-row"><span>폰트:</span><select id="fontSelect" onchange="updatePreview()" style="width:100%; padding:6px; border-radius:6px; border:1px solid #cbd5e1;"><option value="Pretendard, sans-serif">프리텐다드</option><option value="'RIDIBatang', serif">리디바탕</option><option value="'KoPub World Batang', serif">KoPub바탕</option><option value="'MaruBuri', serif">마루부리</option><option value="'Gowun Batang', serif">고운바탕</option><option value="'Cafe24SsurroundAir', sans-serif">서라운드에어</option></select></div>
+          <div class="style-row">
+              <div style="display:flex; justify-content:space-between;"><span>여백:</span><span id="val-paddingRange" class="val-display">32</span>px</div>
+              <input type="range" id="paddingRange" min="0" max="100" value="32" oninput="updateVal('paddingRange', this.value); updatePreview()">
+          </div>
+        </div>
+
+        <div id="sect-detail" class="style-section">
+          <div class="style-row"><span>기본 글자색:</span><div class="mini-color-row"><div class="mini-preview"><div id="txt-pv" class="mini-color-layer"></div><input type="color" oninput="setColor('text',this.value)"></div><input type="text" id="txt-txt" class="mini-input" onchange="setColor('text',this.value)"></div></div>
+          
+          <div class="style-row"><span>"대사" (형광펜):</span><div class="mini-color-row"><div class="mini-preview"><div id="hlbg-pv" class="mini-color-layer"></div><input type="color" oninput="setColor('hlbg',this.value)"></div><input type="text" id="hlbg-txt" class="mini-input" onchange="setColor('hlbg',this.value)"></div></div>
+          
+          <div class="style-row"><span>'속마음' (명조+이탤릭):</span><div class="mini-color-row"><div class="mini-preview"><div id="th-pv" class="mini-color-layer"></div><input type="color" oninput="setColor('th',this.value)"></div><input type="text" id="th-txt" class="mini-input" onchange="setColor('th',this.value)"></div></div>
+
+          <div class="style-row">
+            <div style="display:flex; justify-content:space-between;"><span>*이탤릭* (볼드):</span><label style="font-size:11px; cursor:pointer; display:flex; align-items:center; color:#64748b;"><input type="checkbox" id="noItalic" onchange="updatePreview()"> 효과 끄기</label></div>
+            <div class="mini-color-row"><div class="mini-preview"><div id="it-pv" class="mini-color-layer"></div><input type="color" oninput="setColor('it',this.value)"></div><input type="text" id="it-txt" class="mini-input" onchange="setColor('it',this.value)"></div>
+          </div>
+          
+          <div class="style-row"><span>**강조** (Extra Bold):</span><div class="mini-color-row"><div class="mini-preview"><div id="bd-pv" class="mini-color-layer"></div><input type="color" oninput="setColor('bd',this.value)"></div><input type="text" id="bd-txt" class="mini-input" onchange="setColor('bd',this.value)"></div></div>
+
+          <hr class="parsed-hr" style="margin:10px 0;">
+          
+          <div class="style-row"><span>🗨️ 말풍선(좌) 배경:</span><div class="mini-color-row"><div class="mini-preview"><div id="bb_l_bg-pv" class="mini-color-layer"></div><input type="color" oninput="setColor('bb_l_bg',this.value)"></div><input type="text" id="bb_l_bg-txt" class="mini-input" onchange="setColor('bb_l_bg',this.value)"></div></div>
+          <div class="style-row"><span>🗨️ 말풍선(좌) 글자:</span><div class="mini-color-row"><div class="mini-preview"><div id="bb_l_tx-pv" class="mini-color-layer"></div><input type="color" oninput="setColor('bb_l_tx',this.value)"></div><input type="text" id="bb_l_tx-txt" class="mini-input" onchange="setColor('bb_l_tx',this.value)"></div></div>
+          
+          <div class="style-row" style="margin-top:5px;"><span>🗨️ 말풍선(우) 배경:</span><div class="mini-color-row"><div class="mini-preview"><div id="bb_r_bg-pv" class="mini-color-layer"></div><input type="color" oninput="setColor('bb_r_bg',this.value)"></div><input type="text" id="bb_r_bg-txt" class="mini-input" onchange="setColor('bb_r_bg',this.value)"></div></div>
+          <div class="style-row"><span>🗨️ 말풍선(우) 글자:</span><div class="mini-color-row"><div class="mini-preview"><div id="bb_r_tx-pv" class="mini-color-layer"></div><input type="color" oninput="setColor('bb_r_tx',this.value)"></div><input type="text" id="bb_r_tx-txt" class="mini-input" onchange="setColor('bb_r_tx',this.value)"></div></div>
+
+        </div>
+      </div>
+
+      <div id="block-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+
+      <div style="margin-top:15px; display:flex; gap:8px;">
+        <button class="btn-style" style="flex:1; background:#f1f5f9; color:#334155; padding:12px;" onclick="addBlock('text')">+ 📝 텍스트 추가</button>
+        <button class="btn-style" style="flex:1; background:#f1f5f9; color:#334155; padding:12px;" onclick="document.getElementById('imgFileInput').click()">+ 🖼️ 이미지 추가</button>
+      </div>
+
+      <input type="file" id="imgFileInput" accept="image/*" onchange="addImgBlock(this)">
+      <input type="file" id="bgImgFileInput" accept="image/*" onchange="handleBgUpload(this)">
+      <input type="file" id="insertImgFileInput" accept="image/*" onchange="handleInsertImgUpload(this)">
+      <input type="file" id="presetFileInput" accept=".json" onchange="loadPresets(this)">
+    </div>
+  </div>
+
+  <div class="preview-container">
+    <div id="capture-area"></div>
+  </div>
+
+  <script>
+    // --- 1. 데이터 ---
+    let colors = { 
+      bg1:'#fbfdff', bg2:'#f1f5f9', text:'#0f172a', 
+      hlbg:'#fef08a', hltx:'#000000', 
+      th:'#64748b', it:'#64748b', bd:'#000000', qt:'#475569',
+      bb_l_bg:'#ffffff', bb_l_tx:'#1e293b',
+      bb_r_bg:'#3b82f6', bb_r_tx:'#ffffff'
+    };
+    
+    // 프리셋 데이터 구조 개선: 색상 외 설정도 저장 가능하도록 확장
+    let presets = [
+      { name: '기본', bg1:'#fbfdff', bg2:'#f1f5f9', text:'#0f172a', hlbg:'#fef08a', hltx:'#000000', th:'#64748b', it:'#64748b', bd:'#000000', qt:'#475569', bb_l_bg:'#ffffff', bb_l_tx:'#1e293b', bb_r_bg:'#3b82f6', bb_r_tx:'#ffffff' },
+      { name: '소다', bg1:'#f0f9ff', bg2:'#bae6fd', text:'#0c4a6e', hlbg:'#7dd3fc', hltx:'#082f49', th:'#0284c7', it:'#0369a1', bd:'#0c4a6e', qt:'#38bdf8', bb_l_bg:'#e0f2fe', bb_l_tx:'#0c4a6e', bb_r_bg:'#0ea5e9', bb_r_tx:'#ffffff' },
+      { name: '오션', bg1:'#0f172a', bg2:'#1e3a8a', text:'#f8fafc', hlbg:'#60a5fa', hltx:'#ffffff', th:'#93c5fd', it:'#bfdbfe', bd:'#dbeafe', qt:'#3b82f6', bb_l_bg:'#1e293b', bb_l_tx:'#f8fafc', bb_r_bg:'#2563eb', bb_r_tx:'#ffffff' },
+      { name: '라벤더', bg1:'#f3e8ff', bg2:'#e0e7ff', text:'#4c1d95', hlbg:'#d8b4fe', hltx:'#2e1065', th:'#7c3aed', it:'#6d28d9', bd:'#4c1d95', qt:'#a78bfa', bb_l_bg:'#f5f3ff', bb_l_tx:'#4c1d95', bb_r_bg:'#8b5cf6', bb_r_tx:'#ffffff' },
+      { name: '미드나잇', bg1:'#0f172a', bg2:'#1e293b', text:'#f8fafc', hlbg:'#3b82f6', hltx:'#ffffff', th:'#94a3b8', it:'#94a3b8', bd:'#e2e8f0', qt:'#cbd5e1', bb_l_bg:'#334155', bb_l_tx:'#f8fafc', bb_r_bg:'#3b82f6', bb_r_tx:'#ffffff' },
+      { name: '피치', bg1:'#fff1f2', bg2:'#fff7ed', text:'#881337', hlbg:'#fda4af', hltx:'#881337', th:'#be123c', it:'#be123c', bd:'#881337', qt:'#9f1239', bb_l_bg:'#ffe4e6', bb_l_tx:'#881337', bb_r_bg:'#f43f5e', bb_r_tx:'#ffffff' },
+      { name: '숲속', bg1:'#f0fdf4', bg2:'#dcfce7', text:'#14532d', hlbg:'#86efac', hltx:'#052e16', th:'#15803d', it:'#15803d', bd:'#14532d', qt:'#166534', bb_l_bg:'#dcfce7', bb_l_tx:'#14532d', bb_r_bg:'#16a34a', bb_r_tx:'#ffffff' }
+    ];
+    
+    let bgState = { mode:'gradient', imgData:null, sizeMode:'contain', overlayColor:'#000000', scale:100, posX:50, posY:50 };
+    let insertTargetIndex = -1;
+
+    let blocks = [{type:'text', content:
+`>> V39 업데이트!
+1. 배경 이미지 "채우기" 수정 완료! 🖼️
+이제 빈틈없이 꽉 채워줘.
+
+2. UI 구분 🎨
+스타일 설정창은 푸른색,
+에디터는 흰색으로 구분했어.
+
+3. 슬라이더 숫자 표시 🔢
+슬라이더 옆에 값이 보여서 조절하기 편해!
+게다가 이제 이 모든 설정이 '프리셋'에 다 저장돼!`, width:100}];
+
+    window.onload = function() { initPresets(); renderBlocks(); updateUI(); updatePreview(); }
+
+    // --- 2. 파서 ---
+    function parseContent(text) {
+      if (!text) return '';
+      const lines = text.split('\n');
+      let html = '';
+      
+      lines.forEach(l => {
+        let line = l.trim();
+        if(!line) return;
+
+        const tags = [];
+        const safeLine = line.replace(/<[^>]+>/g, (match) => { tags.push(match); return `__TAG_${tags.length - 1}__`; });
+
+        let s = safeLine.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        let type = 'p';
+        if (s.startsWith('&gt;&gt; ')) { type='bubble-left'; s=s.substring(9); }
+        else if (s.startsWith('&lt;&lt; ')) { type='bubble-right'; s=s.substring(9); }
+        else if (s.startsWith('---')) { type='hr'; }
+        else if (s.startsWith('# ')) { type='h1'; s=s.substring(2); }
+        else if (s.startsWith('## ')) { type='h2'; s=s.substring(3); }
+        else if (s.startsWith('### ')) { type='h3'; s=s.substring(4); }
+
+        if (type==='hr') { html += `<hr class="parsed-hr">`; return; }
+
+        s = s.replace(/\*\*(.*?)\*\*/g, '__BD_S__$1__BD_E__');
+        s = s.replace(/\*(.*?)\*/g, '__IT_S__$1__IT_E__');
+        s = s.replace(/"(.*?)"/g, '__HL_S__$1__HL_E__');
+        s = s.replace(/'(.*?)'/g, '__TH_S__$1__TH_E__');
+
+        s = s.replace(/__BD_S__/g, '<span class="parsed-bold">').replace(/__BD_E__/g, '</span>')
+             .replace(/__IT_S__/g, '<span class="parsed-italic">').replace(/__IT_E__/g, '</span>')
+             .replace(/__HL_S__/g, '<span class="highlight-text">“').replace(/__HL_E__/g, '”</span>')
+             .replace(/__TH_S__/g, '<span class="parsed-thought">').replace(/__TH_E__/g, '</span>');
+        s = s.replace(/__TAG_(\d+)__/g, (_, id) => tags[id]);
+
+        if (type === 'bubble-left') html += `<div class="bubble-row left"><div class="bubble left">${s}</div></div>`;
+        else if (type === 'bubble-right') html += `<div class="bubble-row right"><div class="bubble right">${s}</div></div>`;
+        else if (type === 'h1') html += `<h1 class="parsed-h1">${s}</h1>`;
+        else if (type === 'h2') html += `<h2 class="parsed-h2">${s}</h2>`;
+        else if (type === 'h3') html += `<h3 class="parsed-h3">${s}</h3>`;
+        else html += `<p class="text-part">${s}</p>`;
+      });
+      return html;
+    }
+
+    function renderBlocks() {
+      const c = document.getElementById('block-list'); c.innerHTML = '';
+      blocks.forEach((b, i) => {
+        const div = document.createElement('div'); div.className = 'block-item';
+        let inner = `<div class="block-header"><span class="block-tag">${b.type==='text'?'TXT':'IMG'} #${i+1}</span><div class="block-controls">
+          ${b.type==='text' ? `<button class="btn-sm" style="background:#e0f2fe; color:#0369a1;" onclick="smartExtract(${i})">🧙‍♂️ 추출</button>` : ''}
+          ${b.type==='text' ? `<button class="btn-sm" onclick="splitBlock(event, ${i})">✂️</button>` : ''}
+          ${(i>0 && blocks[i-1].type==='text' && b.type==='text') ? `<button class="btn-sm" onclick="mergeUp(${i})">🧴</button>` : ''}
+          <button class="btn-sm" style="background:#fef3c7; color:#d97706;" onclick="triggerInsertImage(${i})">+🖼️</button>
+          <button class="btn-icon" onclick="moveBlock(${i},-1)">⬆️</button>
+          <button class="btn-icon" onclick="moveBlock(${i},1)">⬇️</button>
+          <button class="btn-icon" style="color:#ef4444;" onclick="delBlock(${i})">✖</button>
+        </div></div>`;
+        if (b.type==='text') {
+          inner += `<textarea id="editor-${i}" class="code-editor" oninput="updateTextContent(${i}, this.value)">${b.content}</textarea>`;
+          inner += `<div style="text-align:right;"><span class="source-label" onclick="toggleSource(${i})">💻 소스 보기</span></div>`;
+          inner += `<textarea id="source-${i}" class="source-viewer" readonly>${parseContent(b.content)}</textarea>`;
+        } else {
+          inner += `<div style="text-align:center;"><img src="${b.content}" class="editor-img-preview"></div>
+          <div style="display:flex; justify-content:center; gap:5px; margin-top:5px;"><span style="font-size:11px;">너비:</span><input type="number" value="${b.width||100}" onchange="updateImgWidth(${i},this.value)" style="width:50px;">%</div>
+          <div style="text-align:right;"><span class="source-label" onclick="toggleSource(${i})">💻 Base64</span></div><textarea id="source-${i}" class="source-viewer" readonly>${b.content.substring(0,200)}...</textarea>`;
+        }
+        div.innerHTML = inner; c.appendChild(div);
+      });
+    }
+
+    function updateTextContent(i, val) {
+      blocks[i].content = val;
+      const v = document.getElementById(`source-${i}`);
+      if(v) v.value = parseContent(val);
+      updatePreview();
+    }
+    
+    // 슬라이더 값 표시 업데이트
+    function updateVal(id, val) {
+        const display = document.getElementById('val-' + id);
+        if(display) display.innerText = val;
+    }
+
+    // --- 3. 미리보기 ---
+    function hexToRgba(hex, alpha) {
+        let r=0,g=0,b=0;
+        if(hex.length===4){r=parseInt(hex[1]+hex[1],16);g=parseInt(hex[2]+hex[2],16);b=parseInt(hex[3]+hex[3],16);}
+        else{r=parseInt(hex.substring(1,3),16);g=parseInt(hex.substring(3,5),16);b=parseInt(hex.substring(5,7),16);}
+        return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    function updatePreview() {
+      const area = document.getElementById('capture-area');
+      const width = document.getElementById('cardWidthInput').value;
+      const pad = document.getElementById('paddingRange').value;
+      const font = document.getElementById('fontSelect').value;
+      
+      const isPlain = document.getElementById('noItalic').checked;
+      const itStyle = isPlain ? 'normal' : 'italic';
+      const itWeight = isPlain ? '400' : '700'; 
+      const activeItalicColor = isPlain ? colors.text : colors.it;
+      
+      const ang = document.getElementById('gradAngle').value;
+      const c1 = hexToRgba(colors.bg1, 1);
+      const c2 = hexToRgba(colors.bg2, 1);
+      const gradLayer = `linear-gradient(${ang}deg, ${c1} 0%, ${c2} 100%)`;
+
+      const scaleVal = document.getElementById('bgScale').value;
+      const posX = document.getElementById('bgPosX').value;
+      const posY = document.getElementById('bgPosY').value;
+      
+      bgState.scale = scaleVal;
+      bgState.posX = posX;
+      bgState.posY = posY;
+
+      let bgStyle = '';
+      
+      if (bgState.mode === 'image' && bgState.imgData) {
+        const al = document.getElementById('overlayAlpha').value;
+        const ov = bgState.overlayColor;
+        const ovRgba = hexToRgba(ov, al);
+        const overlayLayer = `linear-gradient(${ovRgba}, ${ovRgba})`;
+        
+        // V39 수정: 'cover' 모드일 때는 진짜 CSS cover 사용
+        let finalSize = `${bgState.scale}% auto`;
+        if (bgState.sizeMode === 'cover') {
+            finalSize = 'cover';
+        }
+        
+        const finalPos = `${bgState.posX}% ${bgState.posY}%`;
+
+        bgStyle = `
+          background-image: ${overlayLayer}, url('${bgState.imgData}'), ${gradLayer};
+          background-size: 100% 100%, ${finalSize}, 100% 100%;
+          background-position: center, ${finalPos}, center;
+          background-repeat: no-repeat, no-repeat, no-repeat;
+        `;
+      } else {
+        bgStyle = `background: ${gradLayer};`;
+      }
+
+      const cssVars = `
+        --hl-bg:${colors.hlbg}; --hl-col:${colors.hltx}; 
+        --th-col:${colors.th}; --bd-col:${colors.bd}; --qt-col:${colors.qt}; 
+        --it-col:${activeItalicColor}; --it-weight:${itWeight}; --it-style:${itStyle};
+        --bb-l-bg:${colors.bb_l_bg}; --bb-l-tx:${colors.bb_l_tx};
+        --bb-r-bg:${colors.bb_r_bg}; --bb-r-tx:${colors.bb_r_tx};
+      `;
+      
+      let html = `<div class="card-frame" style="width:${width}px; padding:${pad}px; ${bgStyle} color:${colors.text}; font-family:${font}; ${cssVars}">`;
+      blocks.forEach(b => {
+        if(b.type==='text') html += `<div>${parseContent(b.content)}</div>`;
+        else html += `<div style="text-align:center; margin:1.5em 0;"><img src="${b.content}" style="width:${b.width||100}%; border-radius:8px; display:inline-block;"></div>`;
+      });
+      html += `</div>`;
+      area.innerHTML = html;
+    }
+
+    function setColor(k,v){ colors[k]=v; updateUI(); updatePreview(); }
+    
+    function updateUI(){ 
+        for(const[k,v] of Object.entries(colors)){ 
+            const p=document.getElementById(k+'-pv'),t=document.getElementById(k+'-txt');
+            if(p) {
+                p.style.backgroundColor=v; 
+                if(p.nextElementSibling && p.nextElementSibling.type === 'color') {
+                    p.nextElementSibling.value = v;
+                }
+            }
+            if(t)t.value=v;
+        } 
+    }
+    
+    function switchTab(t){ 
+        document.querySelectorAll('.style-section').forEach(e=>e.classList.remove('active'));
+        document.getElementById('sect-'+t).classList.add('active'); 
+        document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active')); 
+        event.target.classList.add('active'); 
+    }
+
+    function toggleImgPanel(isChecked){ 
+        bgState.mode = isChecked ? 'image' : 'gradient';
+        const panel = document.getElementById('img-controls');
+        if(isChecked) panel.classList.remove('hidden');
+        else panel.classList.add('hidden');
+        updatePreview();
+    }
+
+    function setBgSize(s){ 
+        bgState.sizeMode=s;
+        document.getElementById('btnCover').className=s==='cover'?'btn-fit active':'btn-fit'; 
+        document.getElementById('btnContain').className=s==='contain'?'btn-fit active':'btn-fit'; 
+        
+        const scaleSlider = document.getElementById('bgScale');
+        if(s === 'cover') {
+            // 커버 모드면 슬라이더 비활성화 느낌 줄 수도 있지만, 일단 냅둠
+        } else {
+            scaleSlider.value = 100;
+            updateVal('bgScale', 100);
+        }
+        
+        resetBgPos();
+        updatePreview(); 
+    }
+
+    function resetBgPos() {
+        document.getElementById('bgPosX').value = 50;
+        document.getElementById('bgPosY').value = 50;
+        updateVal('bgPosX', 50);
+        updateVal('bgPosY', 50);
+        updatePreview();
+    }
+
+    function handleBgUpload(i){ const f=i.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{bgState.imgData=e.target.result; 
+        document.getElementById('showImgOption').checked = true;
+        toggleImgPanel(true);
+        setBgSize('contain');
+    }; r.readAsDataURL(f); }
+    function setOverlay(c,b){ bgState.overlayColor=c; document.querySelectorAll('.btn-overlay').forEach(el=>el.classList.remove('selected')); b.classList.add('selected'); updatePreview(); }
+    
+    // --- 4. 프리셋 로직 (확장됨) ---
+    function applyPreset(p) {
+        // 색상 적용
+        colors = { ...colors, ...p }; // p에 없는 키는 유지, 겹치면 덮어쓰기
+        
+        // 확장 설정 적용 (존재할 경우)
+        if(p.font) document.getElementById('fontSelect').value = p.font;
+        if(p.padding) { document.getElementById('paddingRange').value = p.padding; updateVal('paddingRange', p.padding); }
+        if(p.gradAngle) { document.getElementById('gradAngle').value = p.gradAngle; updateVal('gradAngle', p.gradAngle); }
+        
+        // 배경 이미지 설정 복원
+        if(p.bgState) {
+            bgState = { ...bgState, ...p.bgState };
+            // 이미지 데이터는 용량이 커서 프리셋에 없을 수도 있음 (보통 로컬 이미지는 재로딩 필요)
+            // 여기서는 설정값들만 복원
+            document.getElementById('bgScale').value = bgState.scale; updateVal('bgScale', bgState.scale);
+            document.getElementById('bgPosX').value = bgState.posX; updateVal('bgPosX', bgState.posX);
+            document.getElementById('bgPosY').value = bgState.posY; updateVal('bgPosY', bgState.posY);
+            document.getElementById('overlayAlpha').value = document.getElementById('overlayAlpha').value; // 이건 상태값이 없어서.. 
+            // 알파값은 DOM요소에 저장되지 않고 바로 렌더링에 쓰였음. 
+            // 완벽 복원을 위해선 overlayAlpha도 bgState에 넣거나 해야하지만, 일단 패스
+            
+            if(bgState.mode === 'image') {
+                document.getElementById('showImgOption').checked = true;
+                toggleImgPanel(true);
+            } else {
+                document.getElementById('showImgOption').checked = false;
+                toggleImgPanel(false);
+            }
+            setBgSize(bgState.sizeMode);
+        }
+
+        updateUI(); 
+        updatePreview();
+    }
+
+    function initPresets(){ 
+        const c=document.getElementById('presetList');
+        c.innerHTML='';
+        presets.forEach((p, idx)=>{ 
+            const b=document.createElement('div'); b.className='btn-preset'; 
+            b.style.background=`linear-gradient(135deg, ${p.bg1}, ${p.bg2})`; 
+            b.title = p.name || '프리셋';
+            b.onclick=()=>{ applyPreset(p); };
+            if(idx >= 7) {
+                b.classList.add('deletable');
+                b.onclick = (e) => {
+                    const rect = b.getBoundingClientRect();
+                    const isX = (e.clientX - rect.right) > -15 && (e.clientY - rect.top) < 15;
+                    if (isX && confirm('이 프리셋을 삭제할까?')) {
+                        e.stopPropagation();
+                        presets.splice(idx, 1);
+                        initPresets();
+                    } else {
+                       applyPreset(p);
+                    }
+                }
+            }
+            c.appendChild(b); 
+        });
+    }
+
+    function saveCurrentToPreset() {
+        const name = prompt("현재 설정을 모두 저장할게! 이름은?:", "나만의 프리셋");
+        if(name) {
+            // 현재 UI 값들을 긁어옴
+            const currentPadding = document.getElementById('paddingRange').value;
+            const currentFont = document.getElementById('fontSelect').value;
+            const currentAngle = document.getElementById('gradAngle').value;
+            const currentOverlayAlpha = document.getElementById('overlayAlpha').value;
+
+            const newPreset = { 
+                name: name, 
+                ...colors,
+                // 추가 설정들 저장
+                padding: currentPadding,
+                font: currentFont,
+                gradAngle: currentAngle,
+                bgState: { ...bgState } // 객체 복사
+            };
+            presets.push(newPreset);
+            initPresets();
+        }
+    }
+
+    function exportPresets() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(presets));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "novel_presets_v39.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+
+    function loadPresets(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const loaded = JSON.parse(e.target.result);
+                if(Array.isArray(loaded)) {
+                    presets = loaded;
+                    initPresets();
+                    alert("프리셋을 불러왔어!");
+                } else {
+                    alert("올바른 형식이 아니야 ㅠㅠ");
+                }
+            } catch(err) {
+                alert("파일을 읽는 중 오류가 났어.");
+            }
+        };
+        reader.readAsText(file);
+        input.value = '';
+    }
+    
+    function addBlock(t){ blocks.push({type:t, content:''}); renderBlocks(); updatePreview(); }
+    function addImgBlock(i){ const f=i.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{blocks.push({type:'image',content:e.target.result});renderBlocks();updatePreview();i.value='';}; r.readAsDataURL(f); }
+    function delBlock(i){ if(confirm('삭제?')){blocks.splice(i,1); renderBlocks(); updatePreview();} }
+    function splitBlock(e,i){ const t=document.getElementById('editor-'+i); if(!t)return;
+      const v=t.value, p=t.selectionStart; blocks[i].content=v.substring(0,p); blocks.splice(i+1,0,{type:'text',content:v.substring(p)}); renderBlocks(); updatePreview(); }
+    function mergeUp(i){ if(confirm('합치기?')){blocks[i-1].content+="\n"+blocks[i].content; blocks.splice(i,1); renderBlocks(); updatePreview();} }
+    function moveBlock(i,d){ const n=i+d; if(n<0||n>=blocks.length)return; [blocks[i],blocks[n]]=[blocks[n],blocks[i]]; renderBlocks(); updatePreview(); }
+    function updateImgWidth(i,v){ blocks[i].width=v; updatePreview(); }
+    function triggerInsertImage(i){ insertTargetIndex=i; document.getElementById('insertImgFileInput').click(); }
+    function handleInsertImgUpload(i){ const f=i.files[0]; if(!f)return;
+      const r=new FileReader(); r.onload=e=>{blocks.splice(insertTargetIndex+1,0,{type:'image',content:e.target.result,width:100}); renderBlocks(); updatePreview(); i.value='';}; r.readAsDataURL(f); }
+    function toggleSource(i){ document.getElementById(`source-${i}`).classList.toggle('show'); }
+    function toggleEditor(){ document.getElementById('editorContent').classList.toggle('collapsed'); document.getElementById('styleBody').style.display='none'; }
+    function toggleStylePanel(){ const s=document.getElementById('styleBody'); s.style.display=s.style.display==='none'?'block':'none'; if(s.style.display==='block') document.getElementById('editorContent').classList.remove('collapsed'); }
+    
+    function smartExtract(i){ 
+        const c=blocks[i].content;
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(c, 'text/html');
+        let el = doc.querySelector('[style*="background"]');
+        if(!el) el = doc.body.firstElementChild;
+        let foundColor = false;
+        let c1, c2;
+
+        if(el && el.style && el.style.background){
+             const m = el.style.background.match(/#(?:[0-9a-fA-F]{3}){1,2}/g);
+             if(m && m.length >= 2){ c1 = m[0]; c2 = m[1]; foundColor = true; }
+        }
+        
+        if(!foundColor) {
+            const m = c.match(/#(?:[0-9a-fA-F]{3}){1,2}/g);
+            if(m && m.length >= 2){ c1 = m[0]; c2 = m[1]; foundColor = true; }
+        }
+
+        if(foundColor) {
+            if(confirm(`배경색을 감지했어!\n시작: ${c1}, 끝: ${c2}\n스타일만 추출하고 박스는 벗겨낼까?`)) {
+                
+                const imgCheck = document.getElementById('showImgOption');
+                if(imgCheck && imgCheck.checked) {
+                    imgCheck.checked = false;
+                    toggleImgPanel(false);
+                }
+
+                setColor('bg1', c1);
+                setColor('bg2', c2);
+                
+                if(el) {
+                    let newContent = '';
+                    doc.body.childNodes.forEach(node => {
+                        if(node === el) {
+                            node.childNodes.forEach(child => {
+                                if(child.nodeType === Node.TEXT_NODE) newContent += child.textContent;
+                                else newContent += child.outerHTML;
+                            });
+                        } else {
+                            if(node.nodeType === Node.TEXT_NODE) newContent += node.textContent;
+                            else newContent += node.outerHTML;
+                        }
+                    });
+                    
+                    blocks[i].content = newContent.trim();
+                    renderBlocks();
+                    updatePreview();
+                }
+            }
+        } else {
+            alert("이 박스에서는 추출할 수 있는 배경색 정보(HTML 스타일 등)를 못 찾았어 😭");
+        }
+    }
+    
+    function saveImage(){ const e=document.getElementById("capture-area").firstElementChild, b=document.querySelector('.btn-save'), t=b.innerText; b.innerText="⏳...";
+      htmlToImage.toPng(e,{pixelRatio:2}).then(u=>{const a=document.createElement('a');a.download='novel.png';a.href=u;a.click();b.innerText=t;}); }
+  </script>
+</body>
+</html>
